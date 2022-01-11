@@ -4,7 +4,7 @@ import pickle
 def recommend(user_id, user_movie, rating_map, k, rank_num):
     rank = {}
     # W = UserSimilarity()
-    with open("../rs_movie_py copy/weights_movies.pkl", "rb") as tf:
+    with open("weights_movies.pkl", "rb") as tf:
         W = pickle.load(tf)
 
     # 当前用户感兴趣的电影集合
