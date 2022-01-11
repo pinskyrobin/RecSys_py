@@ -54,6 +54,6 @@ def get_rating_map():
 
 
 # process("dataset/movies.csv", "dataset/movies.npy")
-# process("dataset/ratings.csv", "dataset/ratings.npy")
+# process("dataset/Y.csv", "dataset/Y.npy")
 # process("dataset/tags.csv", "dataset/tags.npy")
 get_um_map(1)
