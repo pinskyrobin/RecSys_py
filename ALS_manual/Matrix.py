@@ -227,3 +227,6 @@ class Matrix(object):
             for j in range(n):
                 data[i][j] *= scala
         return Matrix(data)
+
+    def add(self, M):
+        return Matrix([[self.data[i][j] + M.data[i][j] for i in range(self.shape[0])] for j in range(self.shape[1])])

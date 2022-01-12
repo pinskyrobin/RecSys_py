@@ -84,7 +84,7 @@ class ALS(object):
                     mse += square_error / n_elements
         return mse ** 0.5
 
-    def fit(self, X, k, max_iter=10):
+    def fit(self, X, k, max_iter=10, lamb=0.1):
 
         # Process item rating data.
         ratings, ratings_T = self._process_data(X)
@@ -95,21 +95,26 @@ class ALS(object):
 
         # Initialize users and X matrix.
         self.user_matrix = Matrix([[random() for _ in range(m)] for _ in range(k)])
+
         # Minimize the RMSE by EM algorithms.
         for i in range(max_iter):
             if i % 2:
                 # U = (I * I_transpose) ^ (-1) * I * R_transpose
+
                 items = self.item_matrix
+                reg_I = Matrix([([0] * self.item_matrix.shape[0]) for i in range(self.item_matrix.shape[0])]).scala_mul(lamb)
                 self.user_matrix = self._mul(
-                    items.mat_mul(items.transpose).inverse.mat_mul(items),
+                    # items.mat_mul(items.transpose).inverse.mat_mul(items),
+                    items.mat_mul(items.transpose).add(reg_I).inverse.mat_mul(items),
                     ratings,
                     "item"
                 )
             else:
                 # I = (U * U_transpose) ^ (-1) * U * R
                 users = self.user_matrix
+                reg_U = Matrix([([0] * self.user_matrix.shape[0]) for i in range(self.user_matrix.shape[0])]).scala_mul(lamb)
                 self.item_matrix = self._mul(
-                    users.mat_mul(users.transpose).inverse.mat_mul(users),
+                    users.mat_mul(users.transpose).add(reg_U).inverse.mat_mul(users),
                     ratings_T,
                     "user"
                 )

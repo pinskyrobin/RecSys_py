@@ -1,5 +1,7 @@
 import math
 import pickle
+import numpy as np
+import pandas as pd
 
 from read_dataset import get_um_map
 
@@ -70,6 +72,56 @@ def ItemSimilarity():
         pickle.dump(W, tf)
 
 
+"""
+    @:param train_recs
+        index refers to user_id
+        [
+            [recommendation list],
+            ...
+        ]
+    @:param test
+        index refers to user_id
+        [
+            [movie list],
+            ...
+        ]
+"""
+
+
+# 描述有多少比例的用户-物品出现在推荐列表中
+def recall(train_recs, test):
+    hit = 0
+    for i in range(len(test)):
+        hit += len(set(test[i]) & set(train_recs[i])) / len(train_recs[i])
+    return hit / len(test)
+
+
+# 描述推荐中有多少比例在用户-物品表中
+def precision(train_recs, test):
+    hit = 0
+    for i in range(len(train_recs)):
+        hit += len(set(train_recs[i]) & set(test[i])) / len(test[i])
+    return hit / len(train_recs)
+
+
+# 推荐物品占全部物品的数量
+def coverage(train_recs, test):
+    rec_part = set()
+    all = set()
+
+    for items in test:
+        for item in items:
+            all.add(item)
+
+    for recs in train_recs:
+        for rec in recs:
+            rec_part.add(rec)
+
+    return len(rec_part) / (len(all) * 1.0)
+
+
 if __name__ == '__main__':
-    UserSimilarity()
-    ItemSimilarity()
+    # UserSimilarity()
+    # ItemSimilarity()
+    ratings = pd.read_csv("ml-latest/ratings.csv").to_numpy()
+    np.save("dataset/rating_full.npy", ratings)
