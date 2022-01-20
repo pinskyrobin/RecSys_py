@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-@Author: tushushu
-@Source Code Address: https://github.com/tushushu/imylu/blob/master/imylu/utils/matrix.py
-"""
-
 from itertools import product, chain
 from copy import deepcopy
 

@@ -1,16 +1,13 @@
-# -*- coding: utf-8 -*-
-"""
-@Author: tushushu
-@Source Code Address: https://github.com/tushushu/imylu/blob/master/imylu/recommend/als.py
-"""
+import numpy as np
+from sklearn.model_selection import train_test_split
 from collections import defaultdict
-from Matrix import Matrix
+from MyALS.Matrix import Matrix
 from random import random
 
 
-class ALS(object):
-
-    def __init__(self):
+class MyALS:
+    def __init__(self, rank=10, max_iter=10, reg_param=0, early_stop_enable=False):
+        # Processor params
         self.user_ids = None
         self.item_ids = None
         self.user_ids_dict = None
@@ -20,6 +17,15 @@ class ALS(object):
         self.user_items = None
         self.shape = None
         self.rmse = None
+        self.es_val = 0.0
+        self.es_count = 0
+        self.early_stop = False
+
+        # Hyper params
+        self.rank = rank
+        self.max_iter = max_iter
+        self.reg_param = reg_param
+        self.early_stop_enable = early_stop_enable
 
     def _process_data(self, X):
 
@@ -84,7 +90,7 @@ class ALS(object):
                     mse += square_error / n_elements
         return mse ** 0.5
 
-    def fit(self, X, k, max_iter=10, lamb=0.1):
+    def fit(self, X):
 
         # Process item rating data.
         ratings, ratings_T = self._process_data(X)
@@ -94,15 +100,16 @@ class ALS(object):
         m, n = self.shape
 
         # Initialize users and X matrix.
-        self.user_matrix = Matrix([[random() for _ in range(m)] for _ in range(k)])
+        self.user_matrix = Matrix([[random() for _ in range(m)] for _ in range(self.rank)])
 
         # Minimize the RMSE by EM algorithms.
-        for i in range(max_iter):
+        for i in range(self.max_iter):
             if i % 2:
                 # U = (I * I_transpose) ^ (-1) * I * R_transpose
 
                 items = self.item_matrix
-                reg_I = Matrix([([0] * self.item_matrix.shape[0]) for i in range(self.item_matrix.shape[0])]).scala_mul(lamb)
+                reg_I = Matrix([([0] * self.item_matrix.shape[0]) for i in range(self.item_matrix.shape[0])]).scala_mul(
+                    self.reg_param)
                 self.user_matrix = self._mul(
                     # items.mat_mul(items.transpose).inverse.mat_mul(items),
                     items.mat_mul(items.transpose).add(reg_I).inverse.mat_mul(items),
@@ -112,14 +119,26 @@ class ALS(object):
             else:
                 # I = (U * U_transpose) ^ (-1) * U * R
                 users = self.user_matrix
-                reg_U = Matrix([([0] * self.user_matrix.shape[0]) for i in range(self.user_matrix.shape[0])]).scala_mul(lamb)
+                reg_U = Matrix([([0] * self.user_matrix.shape[0]) for i in range(self.user_matrix.shape[0])]).scala_mul(
+                    self.reg_param)
                 self.item_matrix = self._mul(
                     users.mat_mul(users.transpose).add(reg_U).inverse.mat_mul(users),
                     ratings_T,
                     "user"
                 )
             rmse = self._get_rmse(ratings)
+
             print("Iterations: %d, RMSE: %.6f" % (i + 1, rmse))
+
+            # Early stop
+            if self.early_stop_enable:
+                if abs(rmse - self.es_val) < 0.001:
+                    self.es_count += 1
+                    if self.es_count >= 3:
+                        print("**Early stopped!**")
+                        break
+                self.es_val = rmse
+
         # Final RMSE.
         self.rmse = rmse
 
@@ -141,3 +160,14 @@ class ALS(object):
             res.append(sorted(items_scores, key=lambda x: x[1], reverse=True)[:n_items])
 
         return res
+
+
+if __name__ == '__main__':
+    data = np.load("/Users/pinskyrobin/OneDrive/Skills/RecommenderSystem/RS_learning/dataset/ratings.npy")
+    data = np.delete(data, -1, axis=1)
+
+    X, Y = train_test_split(data, train_size=0.6, random_state=0)
+    Y = np.delete(Y, -1, axis=1)
+
+    model = ALS()
+    model.fit(X, k=10, max_iter=10, reg_param=3)
