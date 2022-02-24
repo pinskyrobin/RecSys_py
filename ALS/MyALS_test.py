@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from operator import itemgetter
 from utils import recall, precision, coverage
 
-from MyALS.MyALS import MyALS
+from MyALS import MyALS
 
 data = np.load("../ml-latest-small/ratings.npy", allow_pickle=True)
 data = np.delete(data, -1, axis=1)
